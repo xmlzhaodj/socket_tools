@@ -58,7 +58,7 @@ local function add_socket(addr, port)
 		return
 	end
 	sockets[#sockets+1] = client
-	socket_infos[client] = {status=true, last=""}
+	socket_infos[client] = {status=true, last="", time=0}
 end
 
 function remove_socket(client)
@@ -77,6 +77,10 @@ while #sockets < client_count do
 	add_socket(addr, port)
 end
 
+local send_count = 0
+local recv_count = 0
+local all_time = 0
+local last_report_count = 0
 while true do
 	--send message
 	for k, v in pairs(socket_infos) do  
@@ -85,6 +89,8 @@ while true do
 			--print(msg_data)
 			util.send_package(k, msg_data)
 			v.status = false
+			v.time = os.clock()
+			send_count = send_count + 1
 		end
 	end 
 	--recv message
@@ -97,11 +103,23 @@ while true do
 			remove_socket(s)
 		elseif v then
 			--print(v)
+			all_time = all_time + os.clock() - socket_infos[s].time
 			socket_infos[s].status = true
+			socket_infos[s].time = 0
+			recv_count = recv_count + 1
 		end
 	end
 	--add socket
 	while #sockets < client_count do
 		add_socket(addr, port)
 	end
+
+	if recv_count - last_report_count > 10000 then
+		print("client_count: "..tostring(#sockets)..", send_count: "..tostring(send_count)..", recv_count: "..tostring(recv_count)..", all_time: "..tostring(all_time)..", avg_time: "..tostring(all_time/recv_count))
+		send_count = 0
+		recv_count = 0
+		all_time = 0
+		last_report_count = recv_count		
+	end
+
 end
