@@ -17,10 +17,7 @@ local function unpack_package(text)
 end
 
 function util.send_package(client, pack)
-	local size = #pack
-	local package = string.char(bit32.extract(size,8,8)) ..
-		string.char(bit32.extract(size,0,8))..
-		pack
+	local package = string.pack(">s2", pack)
 	client:send(package)
 end
 
@@ -41,6 +38,14 @@ function util.recv_package(client, last)
 		print("Server closed")
 		return false, nil
 	end	
+end
+
+function util.write_file(filename, data)
+	local f = io.open(filename, "w")
+	if f then
+		f:write(data)
+		f:close()
+	end
 end
 
 return util
